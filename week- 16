@@ -1,0 +1,49 @@
+
+# Introduction to NS2
+set ns [new Simulator]
+
+# Create trace and NAM files
+set tr [open intro.tr w]
+$ns trace-all $tr
+
+set nf [open intro.nam w]
+$ns namtrace-all $nf
+
+# Define finish procedure
+proc finish {} {
+    global ns tr nf
+    $ns flush-trace
+    close $tr
+    close $nf
+    exec nam intro.nam &
+    exit 0
+}
+
+# Create nodes
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+
+# Create duplex links
+$ns duplex-link $n0 $n1 2Mb 10ms DropTail
+$ns duplex-link $n1 $n2 1Mb 20ms DropTail
+
+# Create TCP connection
+set tcp [new Agent/TCP]
+$ns attach-agent $n0 $tcp
+
+set sink [new Agent/TCPSink]
+$ns attach-agent $n2 $sink
+$ns connect $tcp $sink
+
+# Create FTP traffic
+set ftp [new Application/FTP]
+$ftp attach-agent $tcp
+
+# Schedule events
+$ns at 0.5 "$ftp start"
+$ns at 4.0 "$ftp stop"
+$ns at 5.0 "finish"
+
+# Run simulation
+$ns run
